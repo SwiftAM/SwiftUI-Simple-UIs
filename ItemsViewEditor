@@ -1,0 +1,205 @@
+
+import SwiftUI
+
+// MARK: - Model
+
+/// A simple model representing a person
+struct Person: Identifiable, Equatable {
+    let id = UUID()          // Unique identifier for SwiftUI lists
+    let name: String         // Person’s name
+    let jobTitle: String     // Person’s job title
+}
+
+// MARK: - Drag-and-Drop Delegate
+
+/// Manages how items are reordered when dragged and dropped
+struct DropViewDelegate: DropDelegate {
+    
+    let destinationItem: Person           // The person onto whom another is dropped
+    @Binding var Items: [Person]          // The array of people being reordered
+    @Binding var draggedItem: Person?     // The currently dragged person
+    
+    /// Proposes a move operation when the drag enters
+    func performDrop(info: DropInfo) -> DropProposal? {
+        return DropProposal(operation: .move)
+    }
+    
+    /// Finalizes the drop and clears the dragged item
+    func performDrop(info: DropInfo) -> Bool {
+        draggedItem = nil
+        return true
+    }
+    
+    /// Called when a dragged item enters the area of another item
+    func dropEntered(info: DropInfo) {
+        // Ensure we have a dragged item
+        if let draggedItem {
+            // Find original index
+            let fromIndex = Items.firstIndex(of: draggedItem)
+            if let fromIndex {
+                // Find destination index
+                let toIndex = Items.firstIndex(of: destinationItem)
+                if let toIndex, fromIndex != toIndex {
+                    // Animate and perform the move in the array
+                    withAnimation {
+                        self.Items.move(
+                            fromOffsets: IndexSet(integer: fromIndex),
+                            toOffset: (toIndex > fromIndex ? (toIndex + 1) : toIndex)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Main Editor View
+
+struct ItemEditor: View {
+    @State private var editMode = false            // Toggles between view and edit (drag) mode
+    @State private var draggedPerson: Person?      // Tracks which person is being dragged
+    
+    // Grid layout configuration
+    var gridItem = [GridItem(.adaptive(minimum: 170, maximum: 170))]
+    
+    // Sample data to display
+    @State private var people: [Person] = [
+        Person(name: "Alice", jobTitle: "iOS Developer"),
+        Person(name: "Bob", jobTitle: "UI/UX Designer"),
+        Person(name: "Charlie", jobTitle: "Project Manager"),
+        Person(name: "Diana", jobTitle: "Backend Engineer"),
+        Person(name: "Ethan", jobTitle: "QA Tester"),
+        Person(name: "Fiona", jobTitle: "Product Owner")
+    ]
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVGrid(columns: gridItem, spacing: 28) {
+                    // Iterate over people to create a draggable/droppable cell
+                    ForEach(people) { person in
+                        ItemContainer(
+                            userName: person.name,
+                            description: person.jobTitle,
+                            showButton: editMode,
+                            people: $people,
+                            person: person
+                        )
+                        // Enable dragging of this person
+                        .onDrag {
+                            self.draggedPerson = person
+                            editMode = true
+                            return NSItemProvider()
+                        }
+                        // Enable dropping onto other items
+                        .onDrop(
+                            of: [.text],
+                            delegate: DropViewDelegate(
+                                destinationItem: person,
+                                Items: $people,
+                                draggedItem: $draggedPerson
+                            )
+                        )
+                    }
+                }
+            }
+            .navigationTitle("List of People")  // Title shown in navigation bar
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    // Toggle between "Edit" and "Done"
+                    Button(editMode ? "Done" : "Edit") {
+                        editMode.toggle()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Individual Item Cell
+
+struct ItemContainer: View {
+    var userName: String = "Ali Mohsen"       // Display name fallback
+    var description: String = "SwiftUI Developer" // Display job title fallback
+    var showButton: Bool = true               // Whether to show delete button
+    
+    @State private var editMode = false       // Local state for wiggle animation
+    @Binding var people: [Person]             // Reference to the array for deletion
+    var person: Person                        // The person this cell represents
+    
+    var body: some View {
+        ZStack {
+            // Main card content
+            VStack(spacing: 2) {
+                // Image named after the user (asset must exist)
+                Image(userName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 100)
+                    .clipped()
+                
+                // Name and title text
+                VStack(alignment: .leading) {
+                    Text("Name: \(userName)")
+                    Text("Title: \(description)")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 4)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .padding(.bottom, 8)
+            }
+            .frame(width: 135, height: 140)
+            
+            // Border around the card
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(lineWidth: 3)
+        }
+        .frame(width: 138, height: 143)
+        .clipShape(.rect(cornerRadius: 20))  // Clip to rounded rect
+        .frame(width: 160, height: 160)
+        .overlay {
+            // Show delete button when in edit mode
+            if showButton {
+                Image(systemName: "minus.circle.fill")
+                    .symbolRenderingMode(.multicolor)
+                    .font(.title)
+                    .onTapGesture {
+                        deleteIndex(item: person)
+                    }
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: .infinity,
+                        alignment: .topLeading
+                    )
+            }
+        }
+        // Wiggle animation when editing
+        .rotationEffect(.degrees(editMode ? 1 : 0))
+        .animation(
+            editMode
+                ? .bouncy(duration: 0.25, extraBounce: 20).repeatForever(autoreverses: true)
+                : .default,
+            value: editMode
+        )
+        // Sync local wiggle state with parent’s edit mode
+        .onChange(of: showButton) {
+            editMode = showButton
+        }
+    }
+    
+    /// Deletes the specified person from the list with animation
+    func deleteIndex(item: Person) {
+        if let index = people.firstIndex(of: item) {
+            withAnimation {
+                people.remove(at: index)
+            }
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    ItemEditor()
+}
