@@ -1,0 +1,63 @@
+import SwiftUI
+
+struct TwitterOpening: View {
+    @State private var iconSize: CGFloat = 100
+    @State private var show = false
+    
+    var body: some View {
+        ZStack {
+            if show {
+                MockUI()
+            } else {
+                Image("twitter")
+                    .resizable()
+                    .frame(width: iconSize, height: iconSize)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.blue.mix(with: .white, by: 0.1))
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.5).delay(0.2)) {
+                iconSize = 5000
+            }
+            withAnimation(.easeInOut.delay(0.8)) {
+                show = true
+            }
+        }
+    }
+}
+
+
+struct MockUI: View {
+    var body: some View {
+        ScrollView {
+            LazyVStack {
+                ForEach(0..<10) { _ in
+                    
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Circle()
+                                .fill(.gray.opacity(0.4))
+                                .frame(width: 40)
+                            
+                            Text("name here")
+                                .font(.headline)
+                            
+                            Text("@username")
+                                .font(.subheadline)
+                        }
+                        
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.gray.opacity(0.4))
+                            .frame(height: 200)
+                            .padding(.horizontal)
+                        
+                        Divider()
+                    }
+                    .padding()
+                }
+            }
+            .redacted(reason: .placeholder)
+        }
+    }
+}
