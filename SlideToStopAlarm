@@ -1,0 +1,116 @@
+import SwiftUI
+
+struct SlideToStopAlarm: View {
+    
+    @State private var slideAnimation: Bool = false
+    @State private var offset: CGFloat = 0
+    var opacity: Double {
+        Double((270-offset)/260)
+    }
+    
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 200) {
+                
+                topSection
+                    .opacity(opacity)
+                
+                VStack(spacing: 15) {
+                    RepeatButton
+                        .opacity(opacity)
+                    slideButton
+                    
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+    
+    var topSection: some View {
+        VStack {
+            Label("Alarm", systemImage: "alarm.fill")
+                .symbolEffect(.wiggle)
+                .foregroundStyle(.gray)
+                .font(.title.bold())
+            
+            Text("9:41")
+                .foregroundStyle(.white)
+                .font(.system(size: 150,weight: .semibold))
+        }
+    }
+    
+    var RepeatButton: some View {
+        Button {
+            
+        } label: {
+            ZStack {
+                Capsule()
+                    .frame(height: 90)
+                    .foregroundStyle(.orange.mix(with: .yellow, by: 0.55))
+                
+                Text("Snooze")
+                    .font(.title.bold())
+                    .foregroundStyle(.white)
+            }
+        }
+    }
+    
+    var slideButton: some View {
+        ZStack(alignment: .leading) {
+            Capsule()
+                .frame(height: 90)
+                .foregroundStyle(.gray.mix(with: .black, by: 0.5))
+            
+            ZStack {
+                Text("slide to stop")
+                    .font(.title2)
+                    .foregroundStyle(.gray)
+                
+                Rectangle()
+                    .fill(LinearGradient(colors: [.white.opacity(0.4), .white,
+                                                  .white,.white.opacity(0.4)],
+                                         startPoint: .leading, endPoint: .trailing))
+                    .frame(height: 90)
+                    .frame(width: 50)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .offset(x: slideAnimation == true ? 90 : -70)
+                    .mask({
+                        Text("slide to stop")
+                            .font(.title2)
+                            .foregroundStyle(.gray)
+                        
+                    })
+            }
+            .onAppear {
+                withAnimation(.smooth(duration: 2).repeatForever(autoreverses: false)) {
+                    slideAnimation = true
+                }
+            }
+            
+            ZStack {
+                Circle()
+                    .fill(.clear)
+                    .frame(width: 90)
+                
+                Image(systemName: "stop.fill")
+                    .foregroundStyle(.white)
+                    .font(.system(size: 35))
+                
+            }
+            .glassEffect(.clear.interactive())
+            .offset(x: offset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        offset = value.translation.width
+                    }
+                    .onEnded { _ in
+                        withAnimation {
+                            offset = .zero
+                        }
+                    }
+            )
+        }
+    }
+}
