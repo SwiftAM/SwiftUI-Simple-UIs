@@ -1,0 +1,60 @@
+import SwiftUI
+import Combine
+
+struct AnalogClock: View {
+    
+    @State private var second: Double = 1200
+    var secondAngle: Double { (360 * (second / 60.0)) }
+    var minuteAngle: Double { (360 * (second/3600)) }
+    var hourAngle: Double { (360 * (second/43200)) }
+    
+    @State private var timer: AnyCancellable?
+    @State private var isRunning = false
+    
+    var body: some View {
+        ZStack {
+            Image("ClockBackground")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 430, height: 430)
+            
+            handHandle(imageName: "HourHand", angle: hourAngle)
+                .scaleEffect(0.6)
+            
+            handHandle(imageName: "MinHand", angle: minuteAngle)
+                .scaleEffect(0.6)
+            
+            handHandle(imageName: "SecondHand", angle: secondAngle)
+                .scaleEffect(0.8)
+        }
+        .onAppear {
+            startTimer()
+        }
+        .onDisappear {
+            timer?.cancel()
+        }
+    }
+    
+    func startTimer() {
+        isRunning = true
+        timer = Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                withAnimation(.linear(duration: 0.1)) {
+                    second += 1
+                }
+            }
+    }
+    
+    func handHandle(imageName: String, angle: Double) -> some View {
+        Image(imageName)
+            .resizable()
+            .scaledToFit()
+            .rotationEffect(.degrees(angle), anchor: .center)
+    }
+}
+
+
+#Preview {
+    AnalogClock()
+}
