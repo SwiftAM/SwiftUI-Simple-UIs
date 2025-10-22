@@ -1,0 +1,105 @@
+struct BookTransition: View {
+    var vm = BookViewModel()
+    var body: some View {
+        NavigationStack {
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 0) {
+                    ForEach(vm.books) { book in
+                        VStack(alignment: .leading) {
+                            BookCover(book)
+                                .shadow(radius: 10)
+                            
+                            displayDetail(title: book.name, author: book.author)
+                                .padding(.horizontal)
+                            
+                        }
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.paging)
+            .navigationTitle("Top Rated Books")
+        }
+    }
+    
+    
+    @ViewBuilder func BookCover(_ book: BookModel) -> some View {
+        
+        Image(book.name)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 250)
+            .shadow(radius: 10)
+            .containerRelativeFrame(.horizontal, alignment: .center)
+            .scrollTransition(.interactive, axis: .horizontal) { image, phase in
+                image
+                    .rotation3DEffect(
+                        .degrees(degree(for: phase, leading: -130, trailing: -90)),
+                        axis: (x: 0, y: 1, z: 0),
+                        perspective: 0.6
+                    )
+            }
+            .background {
+                ZStack {
+                    Rectangle()
+                        .fill(.gray.opacity(0.3))
+                        .offset(x: 4, y: 4)
+                    Rectangle()
+                        .fill(.white)
+                        .offset(x: -4, y: -4)
+                    
+                    VStack {
+                        Text(book.name)
+                        Text(book.author)
+                        
+                        Text(book.intro)
+                            .font(.caption2)
+                            .fontWeight(.light)
+                    }
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .padding(8)
+                }
+                .frame(width: 250)
+                .offset(x: 10)
+                .padding(10)
+                .scrollTransition { background, phase in
+                    background
+                        .rotation3DEffect(
+                            .degrees(degree(for: phase, leading: 0, trailing: -90)),
+                            axis: (x: 0, y: 1, z: 0)
+                        )
+                }
+            }
+            .frame(height: 550)
+    }
+    
+    
+    func degree(for phase: ScrollTransitionPhase, leading: Double, trailing: Double) -> Double {
+        switch phase {
+        case .topLeading:
+            leading
+        case .identity:
+            0
+        case .bottomTrailing:
+            trailing
+        }
+    }
+    
+    func displayDetail(title: String, author: String) -> some View {
+        VStack(alignment: .leading) {
+            Text(title)
+                .font(.title3.bold())
+                .foregroundStyle(.gray)
+            
+            Text("By \(author)")
+                .font(.headline)
+                .foregroundStyle(.gray)
+        }
+    }
+}
+
+
+#Preview {
+    BookTransition()
+}
